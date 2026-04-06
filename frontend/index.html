@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Premium Finance Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #171e30 50%, #0d1223 100%);
+      --glass-bg: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --glow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      border-radius: 16px;
+    }
+
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header h1 { font-size: 2.5rem; font-weight: 700; background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;}
+    .header p { color: #94a3b8; font-weight: 300; margin-top: 0.5rem; }
+
+    #authScreen { width: 100%; max-width: 400px; padding: 2.5rem; display: flex; flex-direction: column; gap: 1rem; margin-top: 3rem;}
+    #authScreen h2 { margin: 0 0 1rem 0; font-size: 1.8rem; text-align: center; }
+    input, select {
+      width: 100%; padding: 0.8rem; background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--glass-border); border-radius: 8px; color: white;
+      font-family: 'Outfit'; outline: none; transition: border 0.3s; box-sizing: border-box;
+    }
+    input:focus { border-color: var(--accent); box-shadow: var(--glow); }
+    button {
+      padding: 0.8rem; background: var(--accent); color: white; border: none; border-radius: 8px;
+      font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: 'Outfit'; font-size: 1rem; width: 100%;
+    }
+    button:hover { background: var(--accent-hover); box-shadow: var(--glow); transform: translateY(-1px); }
+    
+    .switch-mode { text-align: center; color: #94a3b8; font-size: 0.9rem; cursor: pointer; margin-top: 1rem; transition: color 0.3s;}
+    .switch-mode:hover { color: white; }
+
+    #dashboardScreen { width: 100%; max-width: 1100px; display: none; flex-direction: column; gap: 2rem; }
+    
+    .nav { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; }
+    .nav .user-info { display: flex; align-items: center; gap: 1rem; }
+    .nav .role-badge { padding: 0.4rem 1rem; background: rgba(167, 139, 250, 0.2); color: #c4b5fd; border-radius: 20px; font-weight: 600; font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase;}
+    .logout-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: auto; padding: 0.4rem 1.5rem; border-radius: 20px;}
+    .logout-btn:hover { background: var(--danger); color: white; box-shadow: none; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .card { padding: 2rem; text-align: center; position: relative; overflow: hidden; }
+    .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; }
+    .card-income::before { background: var(--success); }
+    .card-expense::before { background: var(--danger); }
+    .card-balance::before { background: var(--accent); }
+    
+    .card h3 { margin: 0; font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; }
+    .card h2 { margin: 0.5rem 0 0; font-size: 2.5rem; font-weight: 700; }
+    
+    .panel { padding: 2rem; }
+    .panel h3 { margin: 0 0 1.5rem 0; font-size: 1.2rem; }
+    
+    .form-group { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+    
+    table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+    th { color: #94a3b8; font-weight: 500; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; padding: 0 1rem; text-align: left; }
+    td { padding: 1.2rem 1rem; background: rgba(15, 23, 42, 0.4); }
+    tr td:first-child { border-radius: 8px 0 0 8px; }
+    tr td:last-child { border-radius: 0 8px 8px 0; }
+    
+    .badge-income { background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 0.4rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem;}
+    .badge-expense { background: rgba(239, 68, 68, 0.15); color: var(--danger); padding: 0.4rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem;}
+
+    #errorMsg { display: none; color: #fecaca; background: rgba(239, 68, 68, 0.2); padding: 1rem; border-radius: 8px; border: 1px solid var(--danger); text-align: center; margin-top: 1rem; }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    .chart-container { position: relative; height: 350px; width: 100%; }
+  </style>
+</head>
+<body>
+  
+  <div class="header">
+    <h1>Finance &amp; HR Dashboard</h1>
+    <p>Premium Secured Backend with Charts, Logging &amp; Service Architecture</p>
+  </div>
+
+  <div id="errorMsg"></div>
+
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="glass">
+    <h2 id="authTitle">Welcome Back</h2>
+    
+    <!-- Register Specific Fields -->
+    <input type="text" id="regName" placeholder="Full Name" style="display:none;">
+    <select id="regRole" style="display:none; margin-top:0.5rem">
+      <option value="Viewer">Viewer (Read Only)</option>
+      <option value="Analyst">Analyst (Dashboards)</option>
+      <option value="Admin">Admin (Full Access)</option>
+    </select>
+    
+    <!-- Common Fields -->
+    <input type="email" id="authEmail" placeholder="Email Address" style="margin-top:0.5rem">
+    <input type="password" id="authPassword" placeholder="Password" style="margin-top:0.5rem">
+    
+    <button id="authBtn" onclick="handleAuth()" style="margin-top:1rem">Login</button>
+    <div class="switch-mode" id="switchMode" onclick="toggleAuthMode()">Don't have an account? Sign up</div>
+  </div>
+
+  <!-- DASHBOARD SCREEN -->
+  <div id="dashboardScreen">
+    <div class="nav glass">
+      <div class="user-info">
+        <span id="userName" style="font-weight: 500; font-size: 1.1rem;">User</span>
+        <span class="role-badge" id="userRole">Role</span>
+      </div>
+      <button class="logout-btn" onclick="logout()">Log Out</button>
+    </div>
+
+    <!-- Smart Insights & Alerts Banner -->
+    <div id="alertBanner" style="display:none; padding: 1rem 2rem; border-radius: 8px; font-weight: 600; text-align: center; margin-bottom: -1rem;"></div>
+    
+    <div class="panel glass" id="insightsPanel" style="display:none; padding: 1rem 2rem; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);">
+      <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #60a5fa;">💡 Smart Insights</h3>
+      <div id="insightsText" style="font-size: 0.9rem; color: #e2e8f0;">Loading insights...</div>
+    </div>
+
+    <!-- Top Spending Categories Chart & Monthly Trends -->
+    <div class="grid" id="chartsGrid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 2rem;">
+      <div class="panel glass" id="spendingChartPanel" style="display:none; flex-direction: column;">
+        <h3>📊 Category Spread</h3>
+        <div class="chart-container" style="height: 250px;">
+          <canvas id="categoryChart"></canvas>
+        </div>
+        <div id="categoryListDetails" style="margin-top: 1rem; max-height: 100px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; color: #cbd5e1;"></div>
+      </div>
+      <div class="panel glass" id="priceGraphPanel" style="display:none; flex-direction: column;">
+        <h3>💰 Top Spending Prices</h3>
+        <div class="chart-container" style="height: 300px;">
+          <canvas id="priceGraph"></canvas>
+        </div>
+      </div>
+      <div class="panel glass" id="financeChartPanel" style="display:none;">
+        <h3>📈 Monthly Trends</h3>
+        <div class="chart-container" style="height: 300px;">
+          <canvas id="monthlyTrendsChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="grid" id="statsGrid">
+      <div class="card glass card-income">
+        <h3>Total Income</h3>
+        <h2 id="totInc" style="color:var(--success)">-</h2>
+      </div>
+      <div class="card glass card-expense">
+        <h3>Total Expense</h3>
+        <h2 id="totExp" style="color:var(--danger)">-</h2>
+      </div>
+      <div class="card glass card-balance">
+        <h3>Net Balance</h3>
+        <h2 id="netBal" style="color:var(--accent)">-</h2>
+      </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="panel glass" id="adminPanel" style="display:none;">
+      <h3>✨ Add New Transaction</h3>
+      <div class="form-group">
+        <div style="display: flex; gap: 0.5rem; flex: 1; min-width: 200px;">
+          <select id="txCurrency" style="width: 70px; padding: 0.8rem 0.5rem; text-align: center;">
+            <option value="$">$ (USD)</option>
+            <option value="₹">₹ (INR)</option>
+            <option value="€">€ (EUR)</option>
+          </select>
+          <input type="number" id="txAmount" placeholder="Amount (e.g. 500)">
+        </div>
+        <input type="text" id="txName" placeholder="Candidate Name (Optional)" style="flex: 1; min-width: 150px;">
+        <select id="txType" style="flex: 1; min-width: 120px;">
+          <option value="Income">Income</option>
+          <option value="Expense">Expense</option>
+        </select>
+        <select id="txCategory" style="flex: 1.5; min-width: 150px; padding: 0.8rem;">
+          <option value="Food &amp; Dining">Food &amp; Dining</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Rent">Rent</option>
+          <option value="Salary">Salary</option>
+          <option value="Travel">Travel</option>
+          <option value="Investment">Investment</option>
+          <option value="Utilities">Utilities</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Other">Other</option>
+        </select>
+        <input type="date" id="txDate" style="flex: 1.5; min-width: 150px;">
+        <input type="text" id="txNotes" placeholder="Notes (optional)" style="flex: 2; min-width: 180px;">
+        <button onclick="addTransaction()" style="width: auto; padding: 0.8rem 2rem;">Submit Record</button>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 1.5rem 0;">
+      
+      <div class="form-group" style="align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.9rem; color: #94a3b8;">Bulk Upload Transactions (CSV Format: Name, Amount, Currency, Type, Category, Date, Notes)</span>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="file" id="csvFile" accept=".csv" style="width: auto; padding: 0.4rem; border: none; background: rgba(59, 130, 246, 0.1);">
+          <button onclick="uploadCSV()" style="width: auto; padding: 0.6rem 2rem; background: var(--success);">Upload CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="panel glass">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin: 0;">Recent Transactions</h3>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="text" id="filterKeyword" placeholder="Search notes/category..." style="width: auto; padding: 0.5rem; font-size: 0.8rem;">
+          <select id="filterType" style="width: auto; padding: 0.5rem; font-size: 0.8rem;">
+            <option value="">All Types</option>
+            <option value="Income">Income</option>
+            <option value="Expense">Expense</option>
+          </select>
+          <select id="filterSort" style="width: auto; padding: 0.5rem; font-size: 0.8rem;">
+            <option value="">Newest</option>
+            <option value="date_asc">Oldest</option>
+            <option value="amount">Highest Amount</option>
+            <option value="amount_asc">Lowest Amount</option>
+          </select>
+          <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.2rem; cursor: pointer;">
+            <input type="checkbox" id="filterDeleted" style="width: auto;"> Show Deleted
+          </label>
+          <button onclick="loadData()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem;">Search</button>
+        </div>
+      </div>
+      <table style="overflow-x: auto; display: block;">
+        <thead style="display: table; width: 100%;">
+          <tr>
+            <th style="width: 15%;">Date</th>
+            <th style="width: 15%;">Name</th>
+            <th style="width: 15%;">Category</th>
+            <th style="width: 10%;">Type</th>
+            <th style="width: 15%;">Amount</th>
+            <th style="width: 20%;">Notes</th>
+            <th style="width: 10%;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" style="display: table; width: 100%;">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // =============================================
+    // CONFIG: Backend API Base URL
+    // Empty string = same server (backend serves frontend)
+    // =============================================
+    const API_BASE = '';
+
+    let isRegisterMode = false;
+    let employeeChart = null;
+    document.getElementById('txDate').valueAsDate = new Date();
+
+    function showError(msg) {
+      const e = document.getElementById('errorMsg');
+      e.textContent = msg; e.style.display = 'block';
+      setTimeout(() => e.style.display='none', 5000);
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('authTitle').textContent = isRegisterMode ? 'Create Account' : 'Welcome Back';
+      document.getElementById('authBtn').textContent = isRegisterMode ? 'Sign Up' : 'Login';
+      document.getElementById('switchMode').textContent = isRegisterMode ? 'Already have an account? Login' : "Don't have an account? Sign up";
+      
+      document.getElementById('regName').style.display = isRegisterMode ? 'block' : 'none';
+      document.getElementById('regRole').style.display = isRegisterMode ? 'block' : 'none';
+    }
+
+    function getAuthHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+    }
+
+    function showSuccess(msg) {
+      const e = document.getElementById('errorMsg');
+      e.textContent = msg;
+      e.style.display = 'block';
+      e.style.color = '#6ee7b7';
+      e.style.background = 'rgba(16, 185, 129, 0.15)';
+      e.style.border = '1px solid #10b981';
+      setTimeout(() => {
+        e.style.display = 'none';
+        e.style.color = '#fecaca';
+        e.style.background = 'rgba(239, 68, 68, 0.2)';
+        e.style.border = '1px solid var(--danger)';
+      }, 4000);
+    }
+
+    async function handleAuth() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      let url = `${API_BASE}/api/auth/login`;
+      let payload = { email, password };
+
+      if(isRegisterMode) {
+        url = `${API_BASE}/api/auth/register`;
+        payload.name = document.getElementById('regName').value;
+        payload.role = document.getElementById('regRole').value;
+      }
+
+      try {
+        const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+        const data = await res.json();
+        if(data.success) {
+          if(isRegisterMode) {
+            showSuccess('✅ Account created successfully! Please log in.');
+            document.getElementById('regName').value = '';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authPassword').value = '';
+            isRegisterMode = false;
+            document.getElementById('authTitle').textContent = 'Welcome Back';
+            document.getElementById('authBtn').textContent = 'Login';
+            document.getElementById('switchMode').textContent = "Don't have an account? Sign up";
+            document.getElementById('regName').style.display = 'none';
+            document.getElementById('regRole').style.display = 'none';
+          } else {
+            localStorage.setItem('token', data.data.token);
+            localStorage.setItem('user', JSON.stringify(data.data));
+            checkAuthAndLoad();
+          }
+        } else {
+           showError(data.error);
+        }
+      } catch(err) { showError('Network error — Is the backend running on http://localhost:5000?'); }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      checkAuthAndLoad();
+    }
+
+    async function checkAuthAndLoad() {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+
+      if(token && userStr) {
+        const user = JSON.parse(userStr);
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('dashboardScreen').style.display = 'flex';
+        
+        document.getElementById('userName').textContent = 'Hello, ' + user.name;
+        document.getElementById('userRole').textContent = user.role;
+        document.getElementById('adminPanel').style.display = (user.role === 'Admin') ? 'block' : 'none';
+
+        document.getElementById('statsGrid').style.display = 'grid';
+        document.getElementById('chartsGrid').style.display = 'grid';
+
+        loadData();
+      } else {
+        document.getElementById('authScreen').style.display = 'flex';
+        document.getElementById('dashboardScreen').style.display = 'none';
+        document.getElementById('errorMsg').style.display = 'none';
+      }
+    }
+
+    async function loadData() {
+      try {
+        const sumRes = await fetch(`${API_BASE}/api/dashboard/summary`, { headers: getAuthHeaders() });
+        const sumData = await sumRes.json();
+        if(sumData.success) {
+          document.getElementById('totInc').textContent = sumData.data.totalIncome.toLocaleString();
+          document.getElementById('totExp').textContent = sumData.data.totalExpense.toLocaleString();
+          document.getElementById('netBal').textContent = sumData.data.netBalance.toLocaleString();
+          
+          const insights = sumData.data.insights;
+          const userStr = localStorage.getItem('user');
+          const u = userStr ? JSON.parse(userStr) : {role: 'Viewer'};
+
+          if (insights) {
+            document.getElementById('insightsPanel').style.display = 'block';
+            let t = '';
+            if (insights.highestSpendingCategory) {
+               t += `🔥 Highest spending this period is on <b>${insights.highestSpendingCategory.category}</b> ($${insights.highestSpendingCategory.amount}). `;
+            }
+            if (insights.expenseComparison) {
+               const st = insights.expenseComparison.status;
+               const pc = insights.expenseComparison.percentage;
+               const col = st === 'increased' ? 'var(--danger)' : 'var(--success)';
+               t += `📊 Expenses have <span style="color:${col}">${st} by ${pc}%</span> compared to the previous active month!`;
+            }
+            if(t === '') t = 'Not enough data to calculate insights yet.';
+            document.getElementById('insightsText').innerHTML = t;
+
+            const alertBanner = document.getElementById('alertBanner');
+            if (insights.budgetAlert === 'danger') {
+              alertBanner.style.display = 'block';
+              alertBanner.style.background = 'rgba(239, 68, 68, 0.2)';
+              alertBanner.style.border = '1px solid var(--danger)';
+              alertBanner.style.color = '#fecaca';
+              alertBanner.innerHTML = `⚠️ <b>DANGER!</b> You have EXCEEDED your monthly budget of $${sumData.data.budget}!`;
+            } else if (insights.budgetAlert === 'warning') {
+              alertBanner.style.display = 'block';
+              alertBanner.style.background = 'rgba(245, 158, 11, 0.2)';
+              alertBanner.style.border = '1px solid #f59e0b';
+              alertBanner.style.color = '#fde68a';
+              alertBanner.innerHTML = `⚠️ <b>WARNING:</b> You have exceeded 80% of your allocated monthly budget of $${sumData.data.budget}!`;
+            } else {
+              alertBanner.style.display = 'none';
+            }
+          } else {
+            document.getElementById('insightsPanel').style.display = 'none';
+          }
+
+          if(sumData.data.monthlyTrends && sumData.data.monthlyTrends.length > 0) {
+            document.getElementById('financeChartPanel').style.display = 'block';
+            plotMonthlyTrends(sumData.data.monthlyTrends);
+          } else {
+            document.getElementById('financeChartPanel').style.display = 'none';
+          }
+
+          if(sumData.data.categoryBreakdown && sumData.data.categoryBreakdown.length > 0) {
+            document.getElementById('spendingChartPanel').style.display = 'flex';
+            document.getElementById('priceGraphPanel').style.display = 'flex';
+            plotCategoryChart(sumData.data.categoryBreakdown);
+          } else {
+            document.getElementById('spendingChartPanel').style.display = 'none';
+            document.getElementById('priceGraphPanel').style.display = 'none';
+          }
+        } else {
+          document.getElementById('totInc').textContent = '🔒';
+          document.getElementById('totExp').textContent = '🔒';
+          document.getElementById('netBal').textContent = '🔒';
+        }
+
+        const kw = document.getElementById('filterKeyword')?.value || '';
+        const tp = document.getElementById('filterType')?.value || '';
+        const st = document.getElementById('filterSort')?.value || '';
+        const del = document.getElementById('filterDeleted')?.checked ? 'true' : 'false';
+        
+        let query = `?keyword=${encodeURIComponent(kw)}&sort=${st}&showDeleted=${del}&limit=100`;
+        if(tp) query += `&type=${tp}`;
+
+        const recRes = await fetch(`${API_BASE}/api/records` + query, { headers: getAuthHeaders() });
+        const recData = await recRes.json();
+        if(recData.success) {
+          const tbody = document.getElementById('tableBody');
+          tbody.innerHTML = '';
+          if(recData.data.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No records found</td></tr>';
+          
+          recData.data.forEach((r) => {
+            const sym = r.currency || '$';
+            const isDel = r.isDeleted;
+            let actionBtn = '-';
+            const userStr = localStorage.getItem('user');
+            if(userStr) {
+               const u = JSON.parse(userStr);
+               if(u.role === 'Admin') {
+                  actionBtn = isDel 
+                    ? `<button style="padding: 0.2rem 0.5rem; font-size: 0.7rem; background: var(--success);" onclick="restoreTransaction('${r._id}')">Restore</button>`
+                    : `<button style="padding: 0.2rem 0.5rem; font-size: 0.7rem; background: var(--danger);" onclick="deleteTransaction('${r._id}')">Delete</button>`;
+               }
+            }
+
+            let opacity = isDel ? '0.5' : '1';
+
+            tbody.innerHTML += `
+              <tr style="opacity: ${opacity}">
+                <td style="color:#94a3b8; width:15%">${new Date(r.date).toLocaleDateString(undefined, {month:'short', day:'2-digit', year:'numeric'})}</td>
+                <td style="color:#f8fafc; font-weight: 500; width:15%">${r.name || (r.user && r.user.name) || '-'}</td>
+                <td style="font-weight:500; width:15%">${r.category}</td>
+                <td style="width:10%"><span class="badge-${r.type.toLowerCase()}">${r.type}</span></td>
+                <td style="font-weight:600; width:15%">${sym} ${r.amount.toLocaleString()}</td>
+                <td style="color:#94a3b8; width:20%; font-size: 0.9em;">${r.notes || '-'}</td>
+                <td style="width:10%;">${actionBtn}</td>
+              </tr>
+            `;
+          });
+        }
+      } catch(e) { }
+    }
+
+    let catChart = null;
+    let priceChart = null;
+
+    function plotCategoryChart(catData) {
+      const predefinedCategories = ['Food & Dining', 'Shopping', 'Rent', 'Salary', 'Travel', 'Investment', 'Utilities', 'Entertainment', 'Other'];
+      
+      const labels = [];
+      const amounts = [];
+      let listHTML = '';
+
+      const backgroundColors = ['#ec4899', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444', '#14b8a6', '#f43f5e', '#6366f1'];
+
+      predefinedCategories.forEach((cat, index) => {
+         let sum = 0;
+         catData.filter(c => c.category === cat).forEach(c => sum += c.totalAmount);
+
+         labels.push(cat);
+         amounts.push(sum);
+         
+         const color = backgroundColors[index % backgroundColors.length];
+         if (sum > 0) {
+           listHTML += `<div style="padding: 0.3rem; background: rgba(255,255,255,0.05); border-left: 3px solid ${color}; border-radius: 4px;">
+                           <span style="font-weight: 600; color: #f8fafc;">${cat}:</span> $${sum.toLocaleString()}
+                         </div>`;
+         } else {
+           listHTML += `<div style="padding: 0.3rem; opacity: 0.5;">
+                           <span style="font-weight: 600;">${cat}:</span> $0
+                         </div>`;
+         }
+      });
+
+      document.getElementById('categoryListDetails').innerHTML = listHTML;
+
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      if (catChart) catChart.destroy();
+
+      catChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: amounts,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#f8fafc', padding: 15 } }
+          }
+        }
+      });
+
+      const priceCtx = document.getElementById('priceGraph').getContext('2d');
+      if (priceChart) priceChart.destroy();
+
+      priceChart = new Chart(priceCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total Spends ($)',
+            data: amounts,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderRadius: 6,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+             x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+             y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          },
+          plugins: {
+             legend: { display: false }
+          }
+        }
+      });
+    }
+
+    let trendsChart = null;
+    function plotMonthlyTrends(trendsData) {
+      const labels = trendsData.map(t => `${t.year}-${String(t.month).padStart(2, '0')}`);
+      const incomes = trendsData.map(t => t.income);
+      const expenses = trendsData.map(t => t.expense);
+
+      const ctx = document.getElementById('monthlyTrendsChart').getContext('2d');
+      if (trendsChart) trendsChart.destroy();
+
+      trendsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Income ($)',
+              data: incomes,
+              backgroundColor: 'rgba(16, 185, 129, 0.8)',
+              borderColor: 'rgba(16, 185, 129, 1)',
+              borderWidth: 1,
+              borderRadius: 4
+            },
+            {
+              label: 'Expense ($)',
+              data: expenses,
+              backgroundColor: 'rgba(239, 68, 68, 0.8)',
+              borderColor: 'rgba(239, 68, 68, 1)',
+              borderWidth: 1,
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          },
+          plugins: {
+            legend: { labels: { color: '#f8fafc' } }
+          }
+        }
+      });
+    }
+
+    async function addTransaction() {
+      const amount = document.getElementById('txAmount').value;
+      const currency = document.getElementById('txCurrency').value;
+      const type = document.getElementById('txType').value;
+      const category = document.getElementById('txCategory').value;
+      const date = document.getElementById('txDate').value;
+      const notes = document.getElementById('txNotes').value;
+      const name = document.getElementById('txName').value;
+
+      if(!amount || !category) {
+        showError("Amount and Category are required!"); return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/records`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ amount, currency, type, category, name, date: date ? new Date(date).toISOString() : new Date().toISOString(), notes })
+      });
+      
+      const data = await res.json();
+      if(data.success) {
+        document.getElementById('txAmount').value = '';
+        document.getElementById('txName').value = '';
+        document.getElementById('txCategory').value = 'Food';
+        document.getElementById('txDate').valueAsDate = new Date();
+        document.getElementById('txNotes').value = '';
+        loadData();
+      } else {
+        showError(data.error);
+      }
+    }
+
+    async function uploadCSV() {
+      const fileInput = document.getElementById('csvFile');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showError("Please select a CSV file first.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/api/records/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if(data.success) {
+        fileInput.value = '';
+        alert(data.message);
+        loadData();
+      } else {
+        showError(data.error);
+      }
+    }
+
+    async function deleteTransaction(id) {
+      if(!confirm("Soft Delete this transaction?")) return;
+      const res = await fetch(`${API_BASE}/api/records/` + id, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if(data.success) {
+        loadData();
+      } else {
+        showError(data.error);
+      }
+    }
+
+    async function restoreTransaction(id) {
+      if(!confirm("Restore this transaction?")) return;
+      const res = await fetch(`${API_BASE}/api/records/` + id + '/restore', {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if(data.success) {
+        loadData();
+      } else {
+        showError(data.error);
+      }
+    }
+
+    checkAuthAndLoad();
+  </script>
+</body>
+</html>
