@@ -21,11 +21,21 @@ const limiter = rateLimit({
 // Middlewares
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5000',
+    'http://localhost:3000',
+    /\.vercel\.app$/,
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true
+}));
 app.use('/api', limiter);
 
-// Serve frontend static files
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Serve frontend static files (local dev only — Vercel serves these via CDN in production)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend')));
+}
 
 // Import Routes
 const authRoutes = require('./routes/authRoutes');
@@ -42,10 +52,12 @@ app.use('/api/users', userRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-// Fallback: serve index.html for all non-API routes (SPA support)
-app.get('/{*path}', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
+// Fallback: serve index.html for all non-API routes (local dev only — Vercel handles this via routes in vercel.json)
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/{*path}', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  });
+}
 
 // Use Global Error Handler (must be after all routes)
 app.use(errorHandler);
