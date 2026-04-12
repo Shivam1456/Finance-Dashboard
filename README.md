@@ -1,17 +1,21 @@
 # Finance-Data
+Deploye on Render URL
+https://finance-dashboardfinance-dashboard.onrender.com/
+
  **Full-Stack Web Application** — Node.js + Express + MongoDB + Vanilla JS SPA  
 > Role-Based Access Control | JWT Auth | Real-Time Analytics | CSV Bulk Upload
-<img width="1920" height="1080" alt="Screenshot (26)" src="https://github.com/user-attachments/assets/d437e6c8-d243-401f-b406-11838019f312" />
 
-<img width="1920" height="1080" alt="Screenshot (27)" src="https://github.com/user-attachments/assets/81401a2c-be3d-4ac5-8315-e6bfb6df8027" />
+<img width="1920" height="1080" alt="Screenshot (25)" src="https://github.com/user-attachments/assets/80f78d20-69ff-4fc5-becb-74324f1ccd9d" />
+<img width="1920" height="1080" alt="Screenshot (26)" src="https://github.com/user-attachments/assets/5b5512d9-f015-4af5-a026-93d9cb46b969" />
 
-<img width="1920" height="1080" alt="Screenshot (28)" src="https://github.com/user-attachments/assets/45d4e7ad-84ba-4153-a590-d102f7cbf649" />
+<img width="1920" height="1080" alt="Screenshot (27)" src="https://github.com/user-attachments/assets/10633f99-4330-4ed6-aa70-2a6f041548f6" />
 
-<img width="1920" height="1080" alt="Screenshot (29)" src="https://github.com/user-attachments/assets/a53a6a89-95ac-4b7b-8c7c-2fbe0f23e169" />
+<img width="1920" height="1080" alt="Screenshot (28)" src="https://github.com/user-attachments/assets/879e385b-3640-4e3a-89a4-0ac66480fcb6" />
 
-<img width="1920" height="1080" alt="Screenshot (30)" src="https://github.com/user-attachments/assets/192e0dcb-f229-450d-8dc7-fc95a79a1c22" />
+<img width="1920" height="1080" alt="Screenshot (29)" src="https://github.com/user-attachments/assets/d71e5057-9fe2-4fc4-a869-c759fd79247e" />
 
-<img width="1920" height="1080" alt="Screenshot (31)" src="https://github.com/user-attachments/assets/09c98eb9-ab66-41d8-b5c3-77034afe9dd9" />
+<img width="1920" height="1080" alt="Screenshot (30)" src="https://github.com/user-attachments/assets/36e6ae56-43a4-41a1-95d2-6ebae267a2fe" />
+
 
 ## 📁 Project Structure
 
