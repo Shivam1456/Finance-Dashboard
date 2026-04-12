@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: finance-dashboard
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false   # Set this manually in Render dashboard
+      - key: JWT_SECRET
+        sync: false   # Set this manually in Render dashboard
+      - key: PORT
+        value: 10000  # Render uses 10000 by default
+      - key: REQUEST_TIMEOUT_MS
+        value: 15000

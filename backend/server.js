@@ -21,71 +21,116 @@ const limiter = rateLimit({
 // Middlewares
 app.use(morgan('dev'));
 app.use(express.json());
+
+// ─── Request Timeout (Render free tier ~30s gateway limit) ───────────────────
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api')) return next();
+  const timeout = parseInt(process.env.REQUEST_TIMEOUT_MS) || 15000;
+  const timer = setTimeout(() => {
+    if (!res.headersSent) {
+      res.status(503).json({
+        success: false,
+        error: 'Request timed out. The server is under load — please try again.',
+        code: 'SEARCH_TIMEOUT'
+      });
+    }
+  }, timeout);
+  res.on('finish', () => clearTimeout(timer));
+  res.on('close',  () => clearTimeout(timer));
+  next();
+});
+
+// CORS — allow localhost (dev) + Render domains + custom FRONTEND_URL
 app.use(cors({
   origin: [
     'http://localhost:5000',
     'http://localhost:3000',
     /\.vercel\.app$/,
+    /\.onrender\.com$/,
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
 }));
 app.use('/api', limiter);
 
-// Serve frontend static files (local dev only — Vercel serves these via CDN in production)
-if (process.env.NODE_ENV !== 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend')));
-}
+// ─── Serve Frontend Static Files ─────────────────────────────────────────────
+// Render is a persistent Node server (not serverless), so we serve the
+// frontend directly from Express in both dev and production.
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Import Routes
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const recordRoutes = require('./routes/recordRoutes');
+const authRoutes      = require('./routes/authRoutes');
+const userRoutes      = require('./routes/userRoutes');
+const recordRoutes    = require('./routes/recordRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
 // Import Global Error Handler
 const errorHandler = require('./middlewares/errorHandler');
 
 // Use Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/records', recordRoutes);
+app.use('/api/auth',      authRoutes);
+app.use('/api/users',     userRoutes);
+app.use('/api/records',   recordRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-// Fallback: serve index.html for all non-API routes (local dev only — Vercel handles this via routes in vercel.json)
-if (process.env.NODE_ENV !== 'production') {
-  app.get('/{*path}', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
-  });
-}
+// SPA Fallback — serve index.html for all non-API routes
+app.get('/{*path}', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 
-// Use Global Error Handler (must be after all routes)
+// Global Error Handler (must be last)
 app.use(errorHandler);
 
-// ─── MongoDB Connection ───────────────────────────────────
+// ─── MongoDB Connection ───────────────────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/finance_dashboard';
 
-let isConnected = false;
+if (!MONGODB_URI && process.env.NODE_ENV === 'production') {
+  console.error('❌ FATAL: MONGODB_URI environment variable is not set!');
+}
+
+let cached = global._mongooseConnection;
+if (!cached) {
+  cached = global._mongooseConnection = { conn: null, promise: null };
+}
 
 async function connectDB() {
-  if (isConnected) return;
-  await mongoose.connect(MONGODB_URI);
-  isConnected = true;
-  console.log('Connected to MongoDB');
-}
-
-// ─── Local Development: Start server normally ─────────────
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 5000;
-  connectDB().then(() => {
-    app.listen(PORT, () => {
-      console.log(`Backend API Server is running on port ${PORT}`);
-      console.log(`API Base URL: http://localhost:${PORT}/api`);
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    }).then((m) => {
+      console.log('✅ Connected to MongoDB');
+      return m;
     });
-  }).catch(err => console.error('Failed to connect to MongoDB', err));
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
 
-// ─── Vercel Serverless: Connect DB then export app ────────
-connectDB().catch(err => console.error('MongoDB connection error:', err));
+// Ensure DB is connected before every API request
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('MongoDB connection failed:', err.message);
+    return res.status(503).json({
+      success: false,
+      error: 'Database unavailable. Please check MONGODB_URI in Render environment variables and ensure MongoDB Atlas allows connections from all IPs (0.0.0.0/0).'
+    });
+  }
+});
+
+// ─── Start Server ─────────────────────────────────────────────────────────────
+// Render sets process.env.PORT automatically (default 10000); locally defaults to 5000.
+const PORT = process.env.PORT || 5000;
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📡 API: http://localhost:${PORT}/api`);
+    console.log(`🌐 App: http://localhost:${PORT}`);
+  });
+}).catch(err => console.error('Failed to connect to MongoDB:', err));
 
 module.exports = app;
