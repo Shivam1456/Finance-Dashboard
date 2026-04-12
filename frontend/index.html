@@ -270,9 +270,12 @@
   <script>
     // =============================================
     // CONFIG: Backend API Base URL
-    // Empty string = same server (backend serves frontend)
+    // Auto-detect: if frontend runs on a different port than backend,
+    // point directly to the backend server.
     // =============================================
-    const API_BASE = '';
+    const API_BASE = (window.location.port === '3000')
+      ? 'http://localhost:5000'
+      : '';
 
     let isRegisterMode = false;
     let employeeChart = null;

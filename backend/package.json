@@ -1,17 +1,19 @@
 {
   "name": "finance-backend",
   "version": "1.0.0",
-  "description": "Finance Dashboard - Backend API Server (Node.js + Express + MongoDB)",
+  "description": "Finance Dashboard - Backend API Server (Node.js + Express + Prisma + SQLite)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "seed": "node seed.js",
-    "test-api": "node test-api.js"
+    "db:migrate": "prisma migrate dev --name init",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "seed": "node seed.js"
   },
-  "keywords": ["finance", "backend", "api", "express", "mongodb"],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["finance", "backend", "api", "express", "prisma", "sqlite"],
+  "author": "Shivam Jaiswal",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -22,8 +24,12 @@
     "express-rate-limit": "^8.3.2",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.4.1",
     "morgan": "^1.10.1",
-    "multer": "^2.1.1"
+    "multer": "^2.1.1",
+    "@prisma/client": "^6.6.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.6.0",
+    "nodemon": "^3.1.9"
   }
 }

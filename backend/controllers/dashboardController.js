@@ -1,13 +1,11 @@
-const Record = require('../models/Record');
-const User = require('../models/User');
-
 exports.getDashboardSummary = async (req, res, next) => {
   try {
-    const records = await Record.find({ isDeleted: false });
+    const prisma = req.app.locals.prisma;
+    const records = await prisma.record.findMany({ where: { isDeleted: false } });
 
-    const totalIncome = records.filter(r => r.type === 'Income').reduce((s, r) => s + r.amount, 0);
+    const totalIncome  = records.filter(r => r.type === 'Income').reduce((s, r) => s + r.amount, 0);
     const totalExpense = records.filter(r => r.type === 'Expense').reduce((s, r) => s + r.amount, 0);
-    const netBalance = totalIncome - totalExpense;
+    const netBalance   = totalIncome - totalExpense;
 
     // Category breakdown
     const categoryMap = {};
@@ -21,11 +19,11 @@ exports.getDashboardSummary = async (req, res, next) => {
     // Monthly trends
     const monthMap = {};
     records.forEach(r => {
-      const d = new Date(r.date);
+      const d   = new Date(r.date);
       const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
       if (!monthMap[key]) monthMap[key] = { year: d.getFullYear(), month: d.getMonth() + 1, income: 0, expense: 0 };
-      if (r.type === 'Income') monthMap[key].income += r.amount;
-      else monthMap[key].expense += r.amount;
+      if (r.type === 'Income')  monthMap[key].income  += r.amount;
+      else                       monthMap[key].expense += r.amount;
     });
     const monthlyTrends = Object.values(monthMap).sort((a, b) => {
       if (a.year !== b.year) return a.year - b.year;
@@ -36,19 +34,15 @@ exports.getDashboardSummary = async (req, res, next) => {
     let insights = null;
     const expenseRecords = records.filter(r => r.type === 'Expense');
     if (expenseRecords.length > 0) {
-      // Highest spending category
       const catSpend = {};
-      expenseRecords.forEach(r => {
-        catSpend[r.category] = (catSpend[r.category] || 0) + r.amount;
-      });
+      expenseRecords.forEach(r => { catSpend[r.category] = (catSpend[r.category] || 0) + r.amount; });
       const topCat = Object.entries(catSpend).sort((a, b) => b[1] - a[1])[0];
 
-      // Expense comparison between latest two months
       const sortedMonths = monthlyTrends.filter(m => m.expense > 0);
       let expenseComparison = null;
       if (sortedMonths.length >= 2) {
         const latest = sortedMonths[sortedMonths.length - 1];
-        const prev = sortedMonths[sortedMonths.length - 2];
+        const prev   = sortedMonths[sortedMonths.length - 2];
         if (prev.expense > 0) {
           const pct = Math.abs(((latest.expense - prev.expense) / prev.expense) * 100).toFixed(1);
           expenseComparison = {
@@ -59,7 +53,7 @@ exports.getDashboardSummary = async (req, res, next) => {
       }
 
       // Budget alert
-      const user = await User.findById(req.user.id);
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       const budget = user ? user.budget : 0;
       let budgetAlert = null;
       if (budget > 0) {
@@ -70,8 +64,7 @@ exports.getDashboardSummary = async (req, res, next) => {
             return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
           })
           .reduce((s, r) => s + r.amount, 0);
-
-        if (thisMonthExpense >= budget) budgetAlert = 'danger';
+        if (thisMonthExpense >= budget)           budgetAlert = 'danger';
         else if (thisMonthExpense >= budget * 0.8) budgetAlert = 'warning';
       }
 
@@ -82,18 +75,10 @@ exports.getDashboardSummary = async (req, res, next) => {
       };
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     res.json({
       success: true,
-      data: {
-        totalIncome,
-        totalExpense,
-        netBalance,
-        categoryBreakdown,
-        monthlyTrends,
-        insights,
-        budget: user ? user.budget : 0
-      }
+      data: { totalIncome, totalExpense, netBalance, categoryBreakdown, monthlyTrends, insights, budget: user ? user.budget : 0 }
     });
   } catch (err) {
     next(err);
