@@ -2,6 +2,8 @@
   "name": "finance-dashboard",
   "version": "1.0.0",
   "description": "Finance & HR Dashboard - Full Stack App",
+  "author": "Shivam Jaiswal",
+  "license": "MIT",
   "scripts": {
     "start": "node backend/server.js",
     "install-backend": "cd backend && npm install"
