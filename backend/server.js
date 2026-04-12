@@ -11,6 +11,9 @@ dotenv.config();
 
 const app = express();
 
+// ─── Trust Render's reverse proxy (fixes X-Forwarded-For warning & rate limiter) ─
+app.set('trust proxy', 1);
+
 // ─── MongoDB Connection ───────────────────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/finance_dashboard';
 
@@ -47,7 +50,8 @@ app.use(express.json());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: { error: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please try again later.' },
+  validate: { trustProxy: false }  // suppress X-Forwarded-For warning on Render
 });
 app.use('/api', limiter);
 
